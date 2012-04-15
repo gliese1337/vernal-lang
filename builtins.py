@@ -5,25 +5,26 @@ from veval import eval, Env
 from vparser import to_string
 
 def vau(clos_env, vars, call_env_sym, body):
-		vars.append(call_env_sym)
 		def closure(call_env, *args):
-			args.append(call_env)
-			return eval(body, Env(zip(vars, args), clos_env))
+			new_env = Env(zip(vars, args), clos_env)
+			new_env[call_env_sym] = call_env
+			return eval(body, new_env)
 		return closure
 
 def lam(clos_env, vars, body):
 		def closure(call_env, *args):
-			args = [Deferral(exp, call_env) for exp in args]
-			return eval(body, Env(zip(vars, args), clos_env))
+			new_env = Env(zip(vars,[Deferral(exp, call_env) for exp in args]), clos_env)
+			new_env['%'] = call_env 
+			return eval(body, new_env)
 		return closure
 
 def define(v,var,e):
-	val = eval(e, v)
+	val = Deferral(e, v)
 	v[var] = val
 	return val
 	
 def set(v,var,e):
-	val = eval(e, v)
+	val = Deferral(e, v)
 	env.find(var)[var] = val
 	return val
 
@@ -45,7 +46,7 @@ def vprint(v,e):
 	val = eval(e, v)
 	print to_string(val)
 	return val
-	
+
 global_env = Env({
 	'+':	lambda v,x,y:eval(x,v)+eval(y,v),
 	'-':	lambda v,x,y:eval(x,v)-eval(y,v),
@@ -81,5 +82,6 @@ global_env = Env({
 	'quote': quote,
 	'begin': begin,
 	'print': vprint,
-	'eval': lambda v,x,e: eval(x,e)
+	'eval': lambda v,x,e: eval(x,e),
+	'@': lambda v,e,*x: eval(x,e)
 })

@@ -49,9 +49,10 @@
 	    (True     (cons (eval (car m) a) (evlis (cdr m) a))))))
 
 
-(define assert-equal (lambda (x y) (print (= x y))))
 
-(define assert-not-equal (lambda (x y) (print (not (= x y)))))
+(define passcount 12)
+(define assert-equal (lambda (x y) (if (not (= x y)) (set! passcount (- passcount 1)) 0)))
+(define assert-not-equal (lambda (x y) (if (= x y) (set! passcount (- passcount 1)) 0)))
 
 (assert-equal (eval 'x '((x test-value)))
 	      'test-value)
@@ -94,3 +95,5 @@
 	      'nonatomic)
 (assert-equal (eval '((lambda (x) (car (cdr x))) '(1 2 3 4)) '())
 	      2)
+(print (= passcount 12))
+(exit)

@@ -3,6 +3,7 @@
 # Built in global procedures and the Vernal Eval function
 
 from vtypes import *
+from vparser import to_string
 
 ### lazy environments
 
@@ -32,12 +33,14 @@ class Env(dict):
 
 def eval(x, env):
 	"Evaluate an expression in an environment."
-	val = x
 	if isa(x, Symbol):		  # variable reference
-		val = env.find(x)[x]
+		return env.find(x)[x]
 	elif isa(x, list):		  # (proc exp*)
 		proc = eval(x[0], env)
-		if hasattr(proc, '__call__'): val = proc(env,*x[1:])
-		else: raise ValueError("%s = %s is not a procedure" % (to_string(x[0]),to_string(proc)))
-	return val
+		if hasattr(proc, '__call__'):
+			return proc(env,*x[1:])
+		elif isa(proc, bool): #sugar for boolean branches
+			return eval(x[1],env) if proc else eval(x[2],env)
+		raise ValueError("%s = %s is not a procedure" % (to_string(x[0]),to_string(proc)))
+	return x
 

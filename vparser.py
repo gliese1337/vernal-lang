@@ -1,12 +1,15 @@
 from vtypes import *
+import re
 
 def tokenize(s):
 	"Convert a string into a list of tokens."
-	return s.replace("(", " ( ").replace(")", " ) ").replace("'"," ' ").split()
+	return re.findall("\".*\"|[();']|[^();'\s]+", s)
 
 def parse(tokens):
 	"Parse a Lisp expression from a string."
-	return read_from(tokens)
+	tree = read_from(tokens)
+	#print tree
+	return tree
 
 def read_from(tokens):
 	"Read an expression from a sequence of tokens."
