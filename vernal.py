@@ -2,8 +2,11 @@
 #
 # Interface for the Vernal interpreter
 
+import os
 import sys
 import traceback
+import readline
+import atexit
 from veval import eval
 from vparser import tokenize, parse, to_string
 from builtins import global_env
@@ -61,7 +64,17 @@ def repl(prompt='vernal> '):
 		
 #### on startup from the command line
 
-if __name__ == "__main__":
+def main():
+	histfile = os.path.expanduser("~/.vernal-history")
+	try: readline.read_history_file(histfile)
+	except IOError: pass
+
+	atexit.register(readline.write_history_file, histfile)
+
 	if len(sys.argv) > 1:
+		global_env.update({'argv':sys.argv[1:]})
 		load(sys.argv[1])
 	repl()
+
+if __name__ == "__main__":
+	main()

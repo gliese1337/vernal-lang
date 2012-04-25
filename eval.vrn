@@ -1,27 +1,25 @@
-(define caar (lambda (x) (car (car x))))
-(define cadr (lambda (x) (car (cdr x))))
-(define cadar (lambda (x) (cadr (car x))))
-(define caddr (lambda (x) (cadr (cdr x))))
-(define caddar (lambda (x) (caddr (car x))))
+(:= caar (fn (x) (car (car x))))
+(:= cadr (fn (x) (car (cdr x))))
+(:= cadar (fn (x) (cadr (car x))))
+(:= caddr (fn (x) (cadr (cdr x))))
+(:= caddar (fn (x) (caddr (car x))))
 
-(define not (lambda (x) (if x False True)))
+;(:= append (fn (x y)
+		 ((null? x) y (cons (car x) (append (cdr x) y)))))
+(:= null? (fn (x) (= x '())))
+(:= pair (fn (x y) (cons x (cons y '() ))))
 
-(define append (lambda (x y)
-		 (if (null? x) y (cons (car x) (append (cdr x) y)))))
-
-(define pair (lambda (x y) (cons x (cons y '() ))))
-
-(define pairlis 
-    (lambda (x y)
-      (if (null? x)
+(:= pairlis 
+    (fn (x y)
+      ((null? x)
 	  '()
 	  (cons (pair (car x) (car y)) (pairlis (cdr x) (cdr y))))))
 
-(define assoc (lambda (x y)
-		(if (eq? (caar y) x) (cadar y) (assoc x (cdr y)))))
+(:= assoc (fn (x y)
+		((eq? (caar y) x) (cadar y) (assoc x (cdr y)))))
 
-(define eval 
-    (lambda (e a)
+(:= eval 
+    (fn (e a)
       (cond
 	((atom? e) (assoc e a))
 	((atom? (car e))
@@ -34,25 +32,39 @@
 	   ((eq? (car e) (q quote)) (cadr e))
 	   ((eq? (car e) (q q))     (cadr e))
 	   ((eq? (car e) (q cond))  (evcon (cdr e) a))
-	   (True                   (eval (cons (assoc (car e) a) (cdr e)) a))))
-	((eq? (caar e) (q lambda))
+	   (#t                   (eval (cons (assoc (car e) a) (cdr e)) a))))
+	((eq? (caar e) (q fn))
 	 (eval (caddar e) (append (pairlis (cadar e) (evlis (cdr e) a)) a))))))
 
-(define evcon 
-    (lambda (c a)
+(:= evcon 
+    (fn (c a)
       (cond ((eval (caar c) a) (eval (cadar c) a))
-	    (True              (evcon (cdr c) a)))))
+	    (#t              (evcon (cdr c) a)))))
 
-(define evlis 
-    (lambda (m a)
+(:= evlis 
+    (fn (m a)
       (cond ((null? m) (q ()))
-	    (True     (cons (eval (car m) a) (evlis (cdr m) a))))))
+	    (#t     (cons (eval (car m) a) (evlis (cdr m) a))))))
 
 
+(:= assert-equal
+	(fn (x y msg)
+		((= x y)
+			(print "Passed test")
+			{
+				(print x)
+				(print y)
+				(exit)
+			})))
 
-(define passcount 12)
-(define assert-equal (lambda (x y) (if (not (= x y)) (set! passcount (- passcount 1)) 0)))
-(define assert-not-equal (lambda (x y) (if (= x y) (set! passcount (- passcount 1)) 0)))
+(:= assert-not-equal
+	(fn (x y msq) ((= x y)
+		{
+			(print x)
+			(print y)
+			(exit)
+		}
+		(print "Passed Test"))))
 
 (assert-equal (eval 'x '((x test-value)))
 	      'test-value)
@@ -63,13 +75,13 @@
 (assert-equal (eval '(quote 7) '())
 	      '7)
 (assert-equal (eval '(atom? '(1 2)) '())
-	      False)
+	      #f)
 (assert-equal (eval '(eq? 1 1) '((1 1)))
-	      True)
+	      #t)
 (assert-equal (eval '(eq? 1 2) '((1 1) (2 2)))
-	      False)
+	      #f)
 (assert-equal (eval '(eq? 1 1) '((1 1)))
-	      True)
+	      #t)
 (assert-equal (eval '(car '(3 2)) '())
 	      '3)
 (assert-equal (eval '(cdr '(1 2 3)) '())
@@ -80,20 +92,21 @@
 	      '(1 2 3))
 (assert-equal (eval '(cond ((atom? x) 'x-atomic) 
 			     ((atom? y) 'y-atomic) 
-			     ('True 'nonatomic))
+			     ('#t 'nonatomic))
 		    '((x 1)(y (3 4))))
 	      'x-atomic)
 (assert-equal (eval '(cond ((atom? x) 'x-atomic) 
 			     ((atom? y) 'y-atomic) 
-			     ('True 'nonatomic))
+			     ('#t 'nonatomic))
 		    '((x (1 2))(y 3)))
 	      'y-atomic)
 (assert-equal (eval '(cond ((atom? x) 'x-atomic) 
 			     ((atom? y) 'y-atomic) 
-			     ('True 'nonatomic)) 
+			     ('#t 'nonatomic)) 
 		    '((x (1 2))(y (3 4))))
 	      'nonatomic)
-(assert-equal (eval '((lambda (x) (car (cdr x))) '(1 2 3 4)) '())
+(assert-equal (eval '((fn (x) (car (cdr x))) '(1 2 3 4)) '())
 	      2)
-(print (= passcount 12))
+
+(print "Passed All Tests")
 (exit)

@@ -8,39 +8,37 @@ def vau(clos_env, vars, call_env_sym, body):
 		def closure(call_env, *args):
 			new_env = Env(zip(vars, args), clos_env)
 			new_env[call_env_sym] = call_env
-			return eval(body, new_env)
+			return Tail(body, new_env)
 		return closure
 
 def lam(clos_env, vars, body):
 		def closure(call_env, *args):
-			new_env = Env(zip(vars,[Deferral(exp, call_env) for exp in args]), clos_env)
+			new_env = Env(zip(vars,[eval(exp, call_env) for exp in args]), clos_env)
 			new_env['%'] = call_env 
-			return eval(body, new_env)
+			return Tail(body, new_env)
 		return closure
 
-def define(v,var,e):
-	val = Deferral(e, v)
+def defvar(v,var,e):
+	val = eval(e, v)
 	v[var] = val
 	return val
 	
-def set(v,var,e):
-	val = Deferral(e, v)
+def setvar(v,var,e):
+	val = eval(e, v)
 	env.find(var)[var] = val
 	return val
-
-def quote(v,exp): return exp
 
 def cond(v,*x):
 	for (p, e) in x:
 		if eval(p, v):
-			return eval(e, v)
+			return Tail(e, v)
 	raise ValueError("No Branch Evaluates to True")
 
 def begin(v,*x):
 	val = 0
-	for e in x:
+	for e in x[:-1]:
 		val = eval(e, v)
-	return val
+	return Tail(x[-1], v)
 	
 def vprint(v,e):
 	val = eval(e, v)
@@ -70,18 +68,18 @@ global_env = Env({
 	'list?':	lambda v,x:isa(eval(x,v),list),
 	'atom?':	lambda v,x:not isa(eval(x,v), list),
 	'exit':		lambda v:exit(),
-	'True':		True,
-	'False':	False,
-	'if':		lambda v,z,t,f: eval((t if eval(z,v) else f), v),
+	'#t':		True,
+	'#f':		False,
+	'if':		lambda v,z,t,f: Tail((t if eval(z,v) else f), v),
 	'cond':		cond,
-	'define':	define,
-	'set!':		set,
+	':=':		defvar,
+	'set!':		setvar,
 	'vau':		vau,
-	'lambda':	lam,
-	'q': quote,
-	'quote': quote,
+	'fn':		lam,
+	'q': 		lambda v,x: x,
+	'quote': 	lambda v,x: x,
 	'begin': begin,
 	'print': vprint,
-	'eval': lambda v,x,e: eval(x,e),
-	'@': lambda v,e,*x: eval(x,e)
+	'eval': lambda v,x,e: Tail(x,e),
+	'@': lambda v,e,*x: Tail(x,e)
 })
